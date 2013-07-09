@@ -4,6 +4,7 @@
 import cPickle as pickle
 from numpy import argmax, zeros, ones
 from math import log
+from IPython import embed
 
 # load the pickle of papers scraped from the HTML page (result of scrape.py)
 paperdict = pickle.load(open( "papers.p", "rb" ))
@@ -53,7 +54,7 @@ for pid,p in enumerate(paperdict):
 		ds[pid2, pid] = score
 
 # build up the string for html
-html = open("nipsnice_template.html", "r").read()
+html = open("website_template.html", "r").read()
 s = ""
 js = "ldadist=["
 js2 = "pairdists=["
@@ -61,32 +62,37 @@ for pid, p in enumerate(paperdict):
 	# pid goes 1...N, p are the keys, pointing to actual paper IDs as given by NIPS, ~1...1500 with gaps
 
 	# get title, author
-	title, author = paperdict[p]
+	# print paperdict[p]
+	paper_id, title, author, filename, keywords = paperdict[p]
+	# print "Title:", title
+	# print "Author:", author
+	# print ""
 
 	# create the tags string
-	topwords = topdict.get(p, [])
+	topwords = topdict.get(filename, [])
+	# embed()
 	# some top100 words may not have been computed during LDA so exclude them if
 	# they aren't found in wtoid
-	t = [x[0] for x in topwords if x[0] in wtoid] 
+	t = [x[0] for x in topwords if x[0] in wtoid]
 	tid = [int(argmax(phi[:, wtoid[x]])) for x in t] # assign each word to class
 	tcat = ""
 	for k in range(ldak):
 		ws = [x for i,x in enumerate(t) if tid[i]==k]
 		tcat += '[<span class="t'+ `k` + '">' + ", ".join(ws) + '</span>] '
-	
+
 	# count up the complete distribution for the entire document and build up
 	# a javascript vector storing all this
 	svec = zeros(ldak)
-	for w in t: 
+	for w in t:
 		svec += phi[:, wtoid[w]]
-	if svec.sum() == 0: 
+	if svec.sum() == 0:
 		svec = ones(ldak)/ldak;
-	else: 
+	else:
 		svec = svec / svec.sum() # normalize
 	nums = [0 for k in range(ldak)]
-	for k in range(ldak): 
+	for k in range(ldak):
 		nums[k] = "%.2f" % (float(svec[k]), )
-	
+
 	js += "[" + ",".join(nums) + "]"
 	if not pid == len(paperdict)-1: js += ","
 
@@ -96,33 +102,32 @@ for pid, p in enumerate(paperdict):
 	if not pid == len(paperdict)-1: js2 += ","
 
 	# get path to thumbnails for this paper
-	thumbpath = "thumbs/NIPS2012_%s.pdf.jpg" % (p, )
+	thumbpath = "thumbs/%s.jpg" % (filename, )
 
 	# get links to PDF, supplementary and bibtex on NIPS servers
-	pdflink = "http://books.nips.cc/papers/files/nips25/NIPS2012_%s.pdf" % (p, )
-	bibtexlink = "http://books.nips.cc/papers/files/nips25/bibhtml/NIPS2012_%s.html" % (p, )
-	supplink = "http://books.nips.cc/papers/files/nips25/NIPS2012_%s.extra.zip" % (p, )
+	pdflink = "http://www.cv-foundation.org/openaccess/content_cvpr_2013/papers/%s" % (filename, )
+	# bibtexlink = "http://books.nips.cc/papers/files/nips25/bibhtml/NIPS2012_%s.html" % (filename, )
+	# supplink = "http://books.nips.cc/papers/files/nips25/NIPS2012_%s.extra.zip" % (filename, )
 
 	s += """
 
 	<div class="apaper" id="pid%d">
 	<div class="paperdesc">
 		<span class="ts">%s</span><br />
-		<span class="as">%s</span><br /><br />
+		<span class="as">%s</span><br />
+		<span class="keywords">Keywords: %s</span><br /><br />
 	</div>
 	<div class="dllinks">
 		<a href="%s">[pdf] </a>
-		<a href="%s">[bibtex] </a>
-		<a href="%s">[supplementary]<br /></a>
 		<span class="sim" id="sim%d">[rank by tf-idf similarity to this]</span><br />
-		<span class="abstr" id="ab%d">[abstract]</span>
+		<!-- <span class="abstr" id="ab%d">[abstract]</span> -->
 	</div>
 	<img src = "%s"><br />
-	<div class = "abstrholder" id="abholder%d"></div>
+	<!-- <div class = "abstrholder" id="abholder%d"></div> -->
 	<span class="tt">%s</span>
 	</div>
 
-	""" % (pid, title, author, pdflink, bibtexlink, supplink, pid, int(p), thumbpath, int(p), tcat)
+	""" % (pid, title, author, keywords, pdflink, pid, int(p), thumbpath, int(p), tcat)
 
 
 newhtml = html.replace("RESULTTABLE", s)
@@ -133,7 +138,7 @@ newhtml = newhtml.replace("LOADDISTS", js)
 js2 += "]"
 newhtml = newhtml.replace("PAIRDISTS", js2)
 
-f = open("nipsnice.html", "w")
+f = open("cvpr2013.html", "w")
 f.write(newhtml)
 f.close()
 

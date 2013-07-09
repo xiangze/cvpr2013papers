@@ -10,7 +10,7 @@ stopwords = open("stopwords.txt", "r").read().split()
 stopwords = [x.strip(punctuation) for x in stopwords if len(x)>2]
 
 # get list of all PDFs supplied by NIPS
-relpath = "nips25offline/content/"
+relpath = "papers/"
 allFiles = os.listdir(relpath)
 pdfs = [x for x in allFiles if x.endswith(".pdf")]
 
@@ -31,12 +31,12 @@ for i,f in enumerate(pdfs):
 	words = [x.lower() for x in txtlst if re.match('^[\w-]+$', x) is not None] # take only alphanumerics
 	words = [x for x in words if len(x)>2 and (not x in stopwords)] # remove stop words
 
-	wcount = {} 
+	wcount = {}
 	for w in words: wcount[w] = wcount.get(w, 0) + 1
 	words = [x for x in words if wcount[x] >= 3] # only take words that occurr at least a bit (for efficiency)
 
 	outf.write(" ".join(words))
 	outf.write("\n")
-	
+
 outf.close()
 

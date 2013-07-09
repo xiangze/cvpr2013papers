@@ -1,5 +1,5 @@
 # go over all pdfs in NIPS, get all the words from each, discard stop words,
-# count frequencies of all words, retain top 100 for each PDF and dump a 
+# count frequencies of all words, retain top 100 for each PDF and dump a
 # pickle of results into topwords.p
 
 import os
@@ -15,14 +15,15 @@ stopwords = open("stopwords.txt", "r").read().split()
 stopwords = [x.strip(punctuation) for x in stopwords if len(x)>2]
 
 # get list of all PDFs supplied by NIPS
-relpath = "nips25offline/content/"
+relpath = "papers/"
 allFiles = os.listdir(relpath)
 pdfs = [x for x in allFiles if x.endswith(".pdf")]
 
 # go over every PDF, use pdftotext to get all words, discard boring ones, and count frequencies
 topdict = {} # dict of paperid -> [(word, frequency),...]
 for i,f in enumerate(pdfs):
-	paperid = f[9:-4]
+	# paperid = f[9:-4]
+	paperid = f
 	fullpath = relpath + f
 
 	print "processing %s, %d/%d" % (paperid, i, len(pdfs))
@@ -37,7 +38,7 @@ for i,f in enumerate(pdfs):
 	words = [x for x in words if len(x)>2 and (not x in stopwords)] # remove stop words
 
 	# count up frequencies of all words
-	wcount = {} 
+	wcount = {}
 	for w in words: wcount[w] = wcount.get(w, 0) + 1
 	top = sorted(wcount.iteritems(), key=itemgetter(1), reverse=True)[:N] # sort and take top N
 

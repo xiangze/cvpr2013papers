@@ -1,0 +1,1005 @@
+2013 IEEE Conference on Computer Vision and Pattern Recognition
+
+Texture Enhanced Image Denoising via Gradient Histogram Preservation
+
+1
+
+Wangmeng Zuo1,2 Lei Zhang2 Chunwei Song1 David Zhang2
+Harbin Institute of Technology, 2 The Hong Kong Polytechnic University
+{cswmzuo, wolvesandme}@gmail.com, {cslzhang, csdzhang}@comp.polyu.edu.hk
+
+Abstract
+
+tionary, the sparsity prior has proved to be eﬀective in image denoising via l0 -norm or l1 -norm minimization [8, 9].
+Another popular prior is the nonlocal self-similarity (NSS)
+prior [2, 16]; that is, in natural images there are often many
+similar patches (i.e., nonlocal neighbors) to a given patch,
+which may be spatially far from it. The joint use of sparsity
+prior and NSS prior has led to state-of-the-art image denoising results [7, 21]. However, the many denoising algorithms
+based on the above priors can still fail to preserve the image ﬁne scale texture structures, which have certain overlap
+with noise in the frequency domain. The over-smoothing of
+those detailed texture structures makes the denoised image
+look less natural, degrading much the visual quality (please
+refer to Fig. 1 for example).
+
+Image denoising is a classical yet fundamental problem
+in low level vision, as well as an ideal test bed to evaluate various statistical image modeling methods. One of
+the most challenging problems in image denoising is how
+to preserve the ﬁne scale texture structures while removing noise. Various natural image priors, such as gradient based prior, nonlocal self-similarity prior, and sparsity
+prior, have been extensively exploited for noise removal.
+The denoising algorithms based on these priors, however,
+tend to smooth the detailed image textures, degrading the
+image visual quality. To address this problem, in this paper we propose a texture enhanced image denoising (TEID)
+method by enforcing the gradient distribution of the denoised image to be close to the estimated gradient distribution of the original image. A novel gradient histogram
+preservation (GHP) algorithm is developed to enhance the
+texture structures while removing noise. Our experimental
+results demonstrate that the proposed GHP based TEID can
+well preserve the texture features of the denoised images,
+making them look more natural.
+
+With the rapid development of digital imaging technology, the resolution of imaging sensor is getting higher and
+higher. On one hand, more ﬁne texture features of the object and scene will be captured; on the other hand, the captured high resolution image is more prone to noise because
+the smaller size of each pixel makes the exposure less suﬃcient. However, suppressing noise while preserving textures
+is diﬃcult to achieve simultaneously, and this has been one
+of the most challenging problems in natural image denoising. Unlike large scale edges, the ﬁne scale textures have
+much higher randomness in local structure and they are hard
+to characterize by using a local model. Considering the fact
+that texture regions in an image are homogeneous and are
+usually composed of similar patterns, statistical descriptors
+such as histogram are more eﬀective to represent them. Actually, in literature of texture representation and classiﬁcation [13, 27, 28], global histogram of some local features is
+dominantly used as the ﬁnal feature descriptor for matching. Meanwhile, image gradients convey most of semantic
+information in an image and are crucial to the human perception of image visual quality. All these motivate us to
+use the histogram of image gradient to design new image
+denoising models.
+
+1. Introduction
+The goal of image denoising is to estimate the latent
+clean image x from its noisy observation y. One commonly
+used observation model is y = x + v , where v is additive
+white Gaussian noise. Image denoising is a classical yet still
+active topic in image processing and low level vision, while
+it is an ideal test bed to evaluate various statistical image
+modeling methods. In general, we hope that the denoised
+image should look like a natural image, and therefore the
+statistical modeling of natural image priors is crucial to the
+success of image denoising.
+Based on the fact that natural image gradients exhibit
+heavy-tailed distributions, gradient-based priors are widely
+used in image denoising [10, 17, 18]. The well-known total variation minimization methods actually assume Laplacian distribution of image gradients [25]. By observing that
+natural images can be sparsely coded over a redundant dic1063-6919/13 $26.00 © 2013 IEEE
+DOI 10.1109/CVPR.2013.159
+
+With the above consideration, in this paper we propose a
+novel method for texture enhanced image denoising (TEID)
+via gradient histogram preservation (GHP). From the given
+noisy image y, we will estimate the gradient histogram of
+1201
+1203
+
+(a)
+
+(b)
+0
+
+10
+
+−1
+
+10
+
+−2
+
+10
+
+−3
+
+10
+
+Reference
+SAPCA−BM3D
+GHP
+
+−4
+
+10
+
+−5
+
+10
+
+0
+
+10
+
+1
+
+10
+
+2
+
+10
+
+Gradient Magnitude
+
+(c)
+
+(d)
+
+Figure 1. Denoised images and their gradient histograms. (a)
+A cropped image with hair textures; (b) denoised image by the
+SAPCA-BM3D method [16]; (c) denoised image by the proposed
+texture enhanced image denoising via gradient histogram preservation (GHP); (d) the gradient histograms of the denoised images.
+We can see that the proposed GHP method leads to better texture
+preservation and visual perception, and the gradient histogram of
+the denoised image by GHP is also closer to the reference gradient
+histogram estimated from the noisy image.
+
+original image x. Take this estimated histogram, denoted by
+hr , as a reference, we search for an estimate of x with GHP,
+i.e., the gradient histogram of the denoised image should
+be close to hr . As shown in Fig. 1, the proposed TEID
+method can well enhance the image texture regions, which
+are often over-smoothed by other denoising methods. The
+major contributions of this paper are as follows:
+(1) A novel image denoising framework, i.e., TEID, is
+proposed, which preserves the gradient distribution of
+the original image. The existing image priors can be
+easily incorporated into the proposed framework to improve the quality of denoised image.
+(2) A histogram speciﬁcation operator is developed to ensure the gradient histogram of denoised image being
+close to the reference histogram, resulting in a simple
+yet eﬀective GHP based TEID algorithm.
+(3) A simple but theoretically solid algorithm is presented
+to estimate the gradient histogram from the given noisy
+image, making TEID practical to implement.
+
+2. Related work
+Generally, image denoising methods can be grouped in
+two categories: model-based methods and learning-based
+
+methods. Most denoising methods reconstruct the clean image by exploiting some image and noise prior models, and
+they belong to the ﬁrst category. Learning-based methods
+attempt to learn a mapping function from the noisy image
+to the clean image [26], and have been receiving considerable research interests [3]. Numerous image denoising
+algorithms have been proposed, and here we only review
+those model-based denoising methods related to our work
+from a viewpoint of natural image priors.
+Studies on natural image priors aim to ﬁnd suitable models to describe the characteristics or statistics (e.g., distribution) of images in some transformed domain. One representative class of image priors is the gradient priors based on
+the observation that natural images generally have a heavytailed distribution of gradients. The use of gradient prior
+can be traced back to 1990s, when Rudin et al. [25] proposed a total variation (TV) model for image denoising,
+where the gradients are actually modeled by Laplacian distribution. Another well-known prior model, the mixture of
+Gaussians (GMM), can also be used to approximate the
+distribution of gradient magnitude [10, 19]. In addition,
+the hyper-Laplacian model can more accurately model the
+heavy-tailed distribution of gradients, and has been widely
+applied to various image restoration tasks [4, 5, 15, 17, 18].
+The image gradient prior is basically a kind of sparsity
+prior, i.e., the gradient distribution is sparse. More generally, the sparsity prior has been well applied to ﬁlter responses, wavelet/curvelet transform coeﬃcients, or the coding coeﬃcients over a redundant dictionary. In [23, 29],
+Gaussian scale mixtures are used to characterize the margin
+and joint distributions of wavelet transform coeﬃcients. In
+[24, 31], the Student t-distributions are used for both learning basis ﬁlters and modeling ﬁlter responses. By assuming
+that an image patch can be represented as a sparse linear
+combination of the atoms in an over-complete dictionary, a
+number of dictionary learning (DL) methods (e.g., K-SVD
+[9], task driven DL [20], and ASDS [8]) have been proposed
+and applied to image denoising and other restoration tasks.
+Based on the fact that a similar patch to the given patch
+may not be spatially close to it, another line of research is to
+model the similarity between image patches, i.e., the image
+nonlocal self-similarity (NSS) priors. The seminal work of
+nonlocal means denoising in [2] has motivated a wide range
+of studies on NSS, and has led to a ﬂurry of NSS based
+state-of-the-art denoising methods, e.g., BM3D [16], LSSC
+[21], and EPLL [32], etc.
+Diﬀerent image priors characterize diﬀerent and complementary aspects of natural image statistics, and thus it
+is possible to combine multiple priors to improve the denoising performance. For example, Dong et al. [7] uniﬁed
+both image local sparsity and nonlocal similarity priors via
+clustering-based sparse representation. Recently, Jancsary
+et al. [14] proposed a method called regression tree ﬁelds
+
+1204
+1202
+
+(RTF) to integrate diﬀerent priors.
+However, many existing image denoising algorithms, including those sparsity and NSS priors based ones, tend to
+wipe out the image detailed textures while removing noise.
+As we discussed in the Introduction section, considering
+the randomness and homogeneousness of image texture regions, we propose to use the histogram of gradient to describe the image texture and design new image denoising
+algorithm with gradient histogram preservation. In [4, 5],
+Cho et al. used hyper-Laplacian to model gradient, and proposed a content-aware prior for image deblurring by setting
+diﬀerent shape parameters of gradient distribution in diﬀerent image regions. By matching the gradient distribution
+prior, Cho et al. found that the deblurred images can have
+more detailed textures as well as better visual quality. However, in [4, 5] the estimation of desired gradient distribution
+is rather heuristic, and the gradient histogram matching algorithm is very complex.
+
+method will be discussed in Section 4). In order to make the
+gradient histogram of denoised image xˆ nearly the same as
+the reference histogram hr , we propose the following GHP
+based image denoising model:
+xˆ = arg minx,F
+
+1
+2σ2
+
+y − x 2 + λR(x) + μ F(∇x) − ∇x
+s.t. hF = hr
+
+2
+
+,
+
+(2)
+where F denotes an odd function which is monotonically
+non-descending in (0, +∞), hF denotes the histogram of the
+transformed gradient image |F (∇x)|, and ∇ denotes the gradient operator. By introducing the transform F, we can use
+the alternating method for image denoising. Given F, we
+can ﬁx ∇x0 = F(∇x), and use the conventional denoising
+methods to update x. Given x, we can update F simply
+by the histogram operator introduced in Section 3.2. Thus,
+with the introduction of F, we can easily incorporate gradient histogram prior with any existing image priors R(x).
+The sparsity and NSS priors have shown promising performance in denoising, and thus we integrate them into the
+proposed GHP model. Speciﬁcally, we adopt the sparse
+nonlocal regularization term proposed in the centralized
+sparse representation (CSR) model [7], resulting in the following denoising model:
+
+3. Denoising with gradient histogram preservation (GHP)
+In this section, we ﬁrst present the image denoising
+model by gradient histogram preservation with sparse nonlocal regularization, and then present an eﬀective histogram
+speciﬁcation algorithm to solve the proposed model for texture enhanced image denoising.
+
+y − x 2 + λ i αi − βi
++μ F(∇x) − ∇x 2
+s.t. x = D ◦ α, hF = hr
+1
+2σ2
+
+xˆ = arg minx,F
+
+3.1. The denoising model
+
+1
+
+, (3)
+
+where λ is the regularization parameter, D is the dictionary
+and α is the coding coeﬃcients of x over D.
+Let’s explain more about the model in Eq. (3). Let xi =
+Ri x be a patch extracted at position i, i = 1, 2, . . . , N, where
+Ri is the patch extraction operator and N is the number of
+pixels in the image. Each xi is coded over the dictionary D,
+and the coding coeﬃcients is αi . Let α be the concatenation
+of all αi , and then x can be reconstructed by
+
+Given a clean image x, the noisy observation y of x is
+usually modeled as
+y = x + v,
+(1)
+where v is the additive white Gaussian noise (AWGN)
+with zero mean and standard deviation σ. The goal of
+image denoising is to estimate the desired image x from
+y. One popular approach to image denoising is the variational method, in which the denoised image is obtained by
+xˆ = arg minx 2σ1 2 y − x 2 + μ · R(x) , where R(x) denotes
+some regularization term and μ is a positive constant. The
+speciﬁc form of R(x) depends on the used image priors.
+One common problem of image denoising methods is
+that the image ﬁne scale details such as texture structures
+will be over-smoothed. An over-smoothed image will have
+much weaker gradients than the original image. Intuitively,
+a good estimation of x without smoothing too much the textures should have a similar gradient distribution to that of
+x. With this motivation, we propose a gradient histogram
+preservation (GHP) model for texture enhanced image denoising (TEID).
+Our intuitive idea is to integrate the gradient histogram
+prior with the other image priors to further improve the denoising performance. Suppose that we have an estimation
+of the gradient histogram of x, denoted by hr (the estimation
+
+N
+
+x= D◦α
+
+i=1
+
+RTi Ri
+
+−1
+
+N
+i=1
+
+RTi Dαi .
+
+(4)
+
+The physical meaning of Eq. (4) is that we use xˆ i = Dαi
+to reconstruct each patch xi , and then put all reconstructed
+patches together as the denoised image xˆ (the overlapped
+pixels between neighboring patches are averaged).
+In Eq. (3), βi is the nonlocal means of αi in the sparse
+coding domain. With the current estimate xˆ , we use the
+blocking matching method as in [7] to ﬁnd the non-local
+q
+q
+neighbors of xˆ i , denoted by xˆ i . Denote by αi the coding
+q
+coeﬃcients of xˆ i . Then βi is computed as the weighted avq
+erage of αi ,
+q q
+βi =
+wi αi ,
+(5)
+q
+
+q
+
+where the weight wi is deﬁned as
+wqi =
+
+1205
+1203
+
+1
+W
+
+exp − 1h xˆ i − xˆ qi
+
+2
+
+,
+
+(6)
+
+where h is a parameter to control the decay rate and W is
+q
+a normalization factor to guarantee q wi = 1. Clearly, the
+regularization term i αi − βi 1 enforce the coding coeﬃcients αi to approach to its nonlocal means βi so that noise
+can be removed, while the l1 -norm comes from the fact that
+αi − βi 1 follows Laplacian distribution [7].
+From the GHP model with sparse nonlocal regularization
+in Eq. (3), one can see that if the histogram regularization
+parameter μ is high, the function F (∇x) will be close to ∇x.
+Since the histogram hF of |F (∇x)| is required to be the same
+as hr , the histogram of ∇x will be similar to hr , leading to
+the desired gradient histogram preserved image denoising.
+Next, we will see that there is an eﬃcient iterative histogram
+speciﬁcation algorithm to solve the model in Eq. (3).
+
+3.2. Iterative histogram speciﬁcation algorithm
+Eq. (3) is minimized iteratively. As in [7], the local PCA
+bases are used as the dictionary D. Based on the current
+estimation of image x, we cluster its patches into K clusters,
+and for each cluster, a PCA dictionary is learned. Then for
+each given patch, we ﬁrst check which cluster it belongs,
+and then use the PCA dictionary of this cluster as the D.
+We propose an alternating minimization method to solve
+the problem in Eq. (3). Given the transform function F, we
+introduce a variable g = F(∇x), and update x (i.e., α) by
+solving the following sub-problem:
+minx
+
+1
+2σ2
+
+y−x
+
+2
+
++ λ i αi − βi
+s.t. x = D ◦ α
+
+1
+
++ μ g − ∇x
+
+2
+
+monotonic non-parametric mapping function F so that the
+histogram of |F (∇x)| is the same as hr .
+Finally, we summarize our proposed iterative histogram
+speciﬁcation based GHP algorithm in Algorithm 1. It
+should be noted that, for any gradient based image denoising model, we can easily incorporate the proposed GHP in it
+by simply modifying the gradient term and adding an extra
+histogram speciﬁcation operation.
+In [1], Attouch et al. showed that: for a nonconvex
+function L(x, y) = f (x) + Q(x, y) + g(y), if L satisﬁes the
+Kurdyka-Lojasiewicz inequality, proximal alternating minimization would converge to a critical point of L. Note that
+our model has a similar form to the one discussed in [1], and
+we also adopted an alternating minimization method. Thus
+the conclusions in [1] ensure the convergence of the proposed GHP algorithm, and we empirically found that our
+algorithm converges well.
+Algorithm 1: Iterative Histogram Speciﬁcation for GHP
+1. Initialize k = 0, x(k) = y
+2. Iterate on k = 0, 1, ..., J
+3. Update g:
+g = F(∇x)
+4. Update x:
+1
+(y − x(k) )
+2σ2
+x(k+1/2) = x(k) + δ
+T
++μ∇ (g − ∇x(k) )
+5. Update the coding coeﬃcients of each patch:
+α(k+1/2)
+= DT Ri x(k+1/2)
+i
+6. Update the nonlocal mean of coding vector αi :
+βi = q wqi αqi
+7. Update α:
+1 T
+D (Ri y − Dα(k+1/2)
+)
+i
++ βi
+= S λ/d d
+α(k+1)
+i
++α(k+1/2)
+−
+β
+i
+i
+8. Update x
+x(k+1) = D ◦ α(k+1)
+9. Update F via histogram speciﬁcation by Eq. (11)
+10. k ←− k + 1
+11. x = x(k) + δ μ∇T (g − ∇x(k) )
+
+. (7)
+
+To get the solution to the above sub-problem, we ﬁrst use a
+gradient descent method to update x:
+x(k+1/2) = x(k) + δ
+
+1
+(y
+2σ2
+
+− x(k) ) + μ∇T g − ∇x(k) ,
+
+(8)
+
+where δ is a pre-speciﬁed constant. Then, the coding coefﬁcients αi are updated by
+= DT Ri x(k+1/2) .
+α(k+1/2)
+i
+
+(9)
+
+By using Eq. (5) to obtain βi , we further update αi by
+⎛ 1 T
+⎞
+⎜⎜⎜ d D Ri y − Dα(k+1/2)
+⎟⎟⎟
+(k+1)
+i
+(10)
+= S λ/d ⎝⎜
+αi
+⎠⎟ + βi ,
+(k+1/2)
+− βi
++αi
+where S λ/d is the soft-thresholding operator, and d is a constant to guarantee the convexity of the surrogate function
+[6]. Finally, we use Eq. (4) to update the whole image and
+let it be x(k+1) .
+Once the estimate of image x is given, we can update F
+by solving the following sub-problem:
+minF F(∇x) − ∇x
+
+2
+
+s.t. hF = hr .
+
+(11)
+
+To solve this sub-problem, we let d0 = |∇x|, and use the
+standard histogram speciﬁcation operator [12] to obtain the
+
+4. Reference gradient histogram estimation
+To apply the model in Eq. (3), we need to know the reference histogram hr , which is supposed to be the gradient
+histogram of original image x. In this section, we propose
+a one dimensional deconvolution model to estimate the histogram hr . Assuming that all pixels in the gradient image
+∇x are independent and identically distributed (i.i.d.), we
+can view them as the samples of a scalar variable, denoted
+by x. Then the normalized histogram of ∇x can be regarded
+as a discrete approximation of the probability density function (PDF) of x. For the additive white Gaussian noise
+(AWGN) v, we can readily model its elements as the samples of an i.i.d. variable, denoted by v. Since v ∼ N 0, σ2
+and let g = ∇v, one can obtain that g is also i.i.d. Gaussian
+
+1206
+1204
+
+its performance in comparison with state-of-the-art denoising algorithms. Finally, we make some discussion of its potential improvements. The Matlab source code of our algorithm can be downloaded at http://www4.comp.polyu.
+edu.hk/˜cslzhang/code.htm.
+
+with PDF [22]
+pg =
+
+g2
+1
+√ exp − 2 .
+4σ
+2 πσ
+
+(12)
+
+Since y = x + v, we have ∇y = ∇x + ∇v. It is ready to
+model ∇y as an i.i.d. variable, denoted by y, and we have
+y = x + g. Let p x be the PDF of x, and py be the PDF of y.
+Since x and g are independent, the joint PDF p (x, g) is,
+p(x, g) = p x × pg .
+
+5.1. Parameter setting
+Our algorithm involves a few parameters to set, including the regularization parameters λ and μ in Eq. (7) to balance the eﬀect of gradient preservation, constant δ in Eq.
+(8) and d in Eq. (10) to ensure convexity. For the parameter
+λ, we use the same strategy as in [8] to adaptively update
+it according to the maximum a posterior (MAP) principle.
+Based on our experimental experience, we set the parameter
+μ to 5, and δ to 0.23 for noise level less than 30 while 0.26
+for other noise levels. Based on the analysis in [6], to guarantee the convexity of surrogate function, d should be larger
+than the spectral norm of dictionary D. Since in our algorithm D is an orthonormal PCA matrix, any d greater than
+1 will be ﬁne, and we set it to 3 by experience. Note that
+these parameters are ﬁxed to all images in our experiments.
+
+(13)
+
+Then the PDF py is
+p x (x = a) × pg (g = (t − a)) da.
+
+py (y = t) =
+
+(14)
+
+a
+
+If we use the normalized histogram h x and hy to approximate p x and py , we can rewrite Eq. (14) in the discrete
+domain as:
+hy = h x ⊗ hg ,
+(15)
+where ⊗ denotes the convolution operator. Note that hg can
+be obtained by discretizing pg , and hy can be computed directly from the noisy observation y.
+Obviously, the estimation of h x can be generally modeled as a deconvolution problem:
+hr = arg minhx
+
+hy − h x ⊗ hg
+
+2
+
++ c · R (h x ) ,
+
+5.2. Denoising results
+To verify the performance of our proposed GHP based
+TEID method, we apply it to ten natural images with various texture structures. The scenes of these images can be
+found in Fig. 3. Some state-of-the-art denoising methods are used for comparison, including shape-adaptive PCA
+based BM3D (SAPCA-BM3D) [16], the learned simultaneously sparse coding (LSSC) [21] and the CSR [7] methods.
+The codes of all the competing methods are provided by the
+authors and we used the recommended parameters by the
+authors. Considering the fact when noise is too strong, all
+methods cannot recover the ﬁne scale texture structures in
+the image, and in practice the noise is often moderate or below, we set the AWGN noise level σ ∈ {20, 25, 30, 35, 40}
+in the experiments.
+The quantitative experimental results by the competing methods are shown Table 1. Apart from PSNR, we
+also list the results by using the perceptual quality metric
+SSIM [30]. From this table, we can see that the proposed
+GHP method has similar PSNR/SSIM measures to SAPCABM3D, LSSC and CSR. Nonetheless, the goal of our GHP
+method is to preserve and enhance the image texture structures, and let’s compare the visual quality of the denoised
+images by these methods. Fig. 4 shows an example. In this
+image, there are diﬀerent texture regions, such as the sky,
+tree, water and building. We can see that SAPCA-BM3D,
+LSSC and CSR smooth much the textures in tree, water and
+building areas, while SAPCA-BM3D introduces some artifacts in the smooth sky area. Though they have good PSNR
+and even SSIM indices, the denoised images by them look
+somewhat unnatural. In contrast, the proposed GHP method
+
+(16)
+
+where c is a constant and R(h x ) is some regularization term
+based on the prior information of natural image’s gradient
+histogram. Considering that h x , i.e., the discrete version
+of p x , can be well modeled as hyper-Laplacian distribution
+[4, 5, 17], in this paper we use a simple parametric method
+to estimate p x and then discretize it into h x .
+The hyper-Laplacian modeling of p x is:
+p x = k exp (−κ|x|γ ) ,
+
+(17)
+
+where k is the normalization factor. The estimation of p x is
+converted into the estimation of parameters κ and γ. Considering the fact that for natural images, κ and γ will have
+a relatively narrow range, we preset a range of each of the
+two parameters, and then search for the pair (κ, γ) which
+2
+makes hy − h x ⊗ hg the smallest. Speciﬁcally, we let
+κ ∈ [0.001, 3] and γ ∈ [0.02, 1.5]. In addition, in our
+experiments the Nelder-Mead method is used to make the
+searching more eﬃcient. Fig. 2 shows an example of reference gradient histogram estimation. It can be seen that our
+method can obtain a good estimation of h x .
+
+5. Experimental results
+We ﬁrst give the parameter setting in our GHP based
+TEID algorithm, and then conduct experiments to validate
+
+1207
+1205
+
+3000
+
+4
+
+3000
+Real
+Simulated
+
+Real
+2000
+
+2000
+
+Simulated
+
+2
+
+x 10
+
+Real
+Restored
+
+1.5
+1
+
+1000
+
+1000
+0.5
+
+0
+
+0
+
+100
+200
+Gradient magnitude
+
+300
+
+0
+
+0
+
+100
+200
+Gradient magnitude
+
+(a)
+
+300
+
+0
+
+0
+
+50
+
+(b)
+
+100
+150
+200
+Gradient magnitude
+
+250
+
+300
+
+(c)
+
+Figure 2. An example of reference gradient histogram estimation. (a) Real and simulated AWGN gradient histograms (noise level σ = 30);
+(b) real and simulated gradient histograms of noisy image; and (c) real and estimated gradient histograms of the clean image.
+Table 1. PSNR (dB) and SSIM results by diﬀerent methods.
+σ
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+Avg
+
+SAPCA-BM3D[16]
+20
+25
+30
+35
+40
+30.83 29.66 28.75 28.02 27.41
+0.876 0.849 0.825 0.803 0.784
+28.07 26.99 26.18 25.54 25.02
+0.817 0.773 0.734 0.699 0.668
+28.39 27.43 26.66 26.01 25.46
+0.755 0.721 0.692 0.667 0.647
+26.86 25.68 24.79 24.08 23.50
+0.803 0.758 0.715 0.677 0.641
+30.88 29.96 29.21 28.58 28.06
+0.812 0.780 0.754 0.730 0.709
+28.59 27.32 26.35 25.59 24.97
+0.888 0.856 0.824 0.794 0.765
+30.17 29.14 28.35 27.71 27.18
+0.839 0.803 0.771 0.744 0.721
+31.58 30.48 29.64 28.94 28.37
+0.900 0.879 0.861 0.843 0.828
+27.58 26.37 25.44 24.73 24.15
+0.821 0.778 0.740 0.707 0.677
+31.23 30.28 29.53 28.92 28.42
+0.823 0.791 0.763 0.740 0.721
+29.42 28.33 27.49 26.81 26.25
+0.833 0.799 0.768 0.740 0.716
+
+LSSC[21]
+20
+25
+30
+35
+40
+30.69 29.56 28.62 27.91 27.32
+0.872 0.846 0.820 0.800 0.781
+27.98 26.94 26.14 25.51 24.98
+0.815 0.773 0.734 0.700 0.670
+28.46 27.52 26.66 26.03 25.47
+0.762 0.728 0.696 0.670 0.647
+26.75 25.61 24.76 24.06 23.48
+0.803 0.758 0.717 0.678 0.643
+30.75 29.81 29.04 28.41 27.90
+0.809 0.776 0.744 0.718 0.696
+28.47 27.26 26.33 25.59 24.98
+0.883 0.850 0.825 0.795 0.769
+30.18 29.18 28.40 27.81 27.32
+0.840 0.807 0.775 0.751 0.729
+31.38 30.33 29.54 28.86 28.32
+0.894 0.872 0.858 0.840 0.826
+27.58 26.40 25.48 24.77 24.19
+0.822 0.782 0.748 0.716 0.687
+31.04 30.08 29.36 28.75 28.24
+0.818 0.787 0.755 0.732 0.712
+29.33 28.27 27.43 26.77 26.22
+0.832 0.798 0.767 0.740 0.716
+
+preserves much better these ﬁne texture areas, making the
+denoised image look more natural and visually pleasant.
+Due to the limit of space, here we cannot put more visual
+results. More examples can be found in the supplementary
+ﬁle attached to this paper.
+
+CSR[7]
+20
+25
+30
+30.59 29.46 28.58
+0.869 0.843 0.820
+27.91 26.87 26.08
+0.807 0.764 0.727
+28.11 27.16 26.39
+0.736 0.702 0.675
+26.65 25.52 24.64
+0.782 0.737 0.697
+30.64 29.68 28.91
+0.802 0.770 0.742
+28.49 27.24 26.30
+0.882 0.851 0.820
+30.13 29.14 28.38
+0.833 0.799 0.770
+31.41 30.35 29.52
+0.897 0.877 0.860
+27.34 26.18 25.31
+0.804 0.764 0.729
+30.98 30.03 29.30
+0.813 0.781 0.755
+29.23 28.16 27.34
+0.823 0.789 0.760
+
+35
+40
+27.76 27.19
+0.793 0.776
+25.37 24.87
+0.681 0.651
+25.64 25.10
+0.640 0.621
+23.84 23.26
+0.640 0.604
+28.27 27.76
+0.710 0.690
+25.49 24.90
+0.788 0.761
+27.71 27.22
+0.738 0.717
+28.79 28.24
+0.841 0.827
+24.47 23.92
+0.683 0.655
+28.76 28.28
+0.728 0.710
+26.61 26.07
+0.724 0.701
+
+GHP
+20
+25
+30
+35
+40
+30.49 29.35 28.40 27.31 26.49
+0.864 0.837 0.811 0.792 0.775
+27.80 26.68 25.81 24.85 24.16
+0.810 0.768 0.731 0.689 0.656
+28.09 27.14 26.36 25.46 24.88
+0.756 0.721 0.691 0.656 0.635
+26.59 25.43 24.51 23.62 22.91
+0.796 0.752 0.715 0.673 0.637
+30.56 29.54 28.63 27.66 26.75
+0.805 0.773 0.742 0.714 0.688
+28.35 27.11 26.11 25.16 24.46
+0.874 0.844 0.816 0.798 0.776
+30.07 28.98 28.13 27.11 26.37
+0.840 0.806 0.776 0.746 0.722
+31.19 30.04 29.09 27.87 27.05
+0.889 0.865 0.844 0.832 0.820
+27.26 26.09 25.18 24.18 23.53
+0.809 0.769 0.737 0.700 0.671
+30.85 29.73 28.78 27.73 26.83
+0.814 0.780 0.749 0.723 0.699
+29.13 28.01 27.10 26.10 25.34
+0.826 0.792 0.761 0.732 0.708
+
+results in all regions.
+
+5.3. Discussions
+It is worth noting that, to further enhance the noise removal and texture preservation performance of our method,
+region-based GHP could be implemented. Since natural images often consist of diﬀerent regions with diﬀerent textures, the gradient distributions in these regions will also
+vary. Therefore, with the help of image segmentation methods such as mean-shift [11], we can partition the noisy image into several homogeneous regions, and apply the GHP
+method to each region. Fig. 5 shows an example. One can
+see that without segmentation, the proposed GHP method
+may generate some false textures in the less textured area
+(e.g., cloud) due to the inﬂuence of other texture areas (e.g.,
+trees). With roughly segment the image into 2 regions, as
+shown in Fig. 5(c), GHP leads to very satisfying denoising
+
+Figure 3. Ten test images. From left to right and top to bottom,
+they are labeled as 1 to 10.
+
+6. Conclusion
+In this paper, we presented a novel gradient histogram
+preserving (GHP) model for texture-enhanced image denoising (TEID). The GHP model can preserve the gradient distribution by pushing the gradient histogram of the
+denoised image toward the reference histogram, and thus
+is promising in enhancing the texture structure while re-
+
+1208
+1206
+
+moving random noise. To implement the GHP model, we
+proposed an eﬃcient iterative histogram speciﬁcation algorithm. Meanwhile, we presented a simple but theoretically
+solid algorithm to estimate the reference gradient histogram
+from the noisy image. Experimental results verify the effectiveness of GHP based TEID. The proposed GHP has
+similar PSNR/SSIM measures to state-of-the-art denoising
+methods such as SAPCA-BM3D, LSSC and CSR; however,
+it leads to more natural and visually pleasant denoising results by preserving better the image texture areas. In the
+future, we will extend GHP to image deblurring, superresolution and other image reconstruction tasks.
+
+Acknowledgements
+This work is supported by NSFC under Grant No.
+61271093, the Hong Kong Scholar Program, and the program of ministry of education for new century excellent talents.
+
+References
+[1] H. Attouch, J. Bolte, P. Redont, and A. Soubeyran. Proximal alternating minimization and projection methods for
+nonconvex problems: An approach based on the KurdykaLojasiewicz inequality. Mathematics of Operations Research, 35(2):438–457, 2010.
+[2] A. Buades, B. Coll, and J. Morel. A review of image denoising methods, with a new one. Multiscale Model. Simul.,
+4(2):490–530, 2005.
+[3] H. C. Burger, C. J. Schuler, and S. Harmeling. Image denoising: can plain neural networks compete with bm3d? Proc.
+CVPR, 2012.
+[4] T. S. Cho, N. Joshi, C. L. Zitnick, S. B. Kang, R. Szeliski,
+and W. T. Freeman. A content-aware image prior. Proc.
+CVPR, 2010.
+[5] T. S. Cho, C. L. Zitnick, N. Joshi, S. B. Kang, R. Szeliski,
+and W. T. Freeman. Image restoration by matching gradient
+distributions. IEEE T-PAMI, 34(4):683–694, 2012.
+[6] I. Daubechies, M. Defriese, and C. DeMol. An iterative thresholding algorithm for linear inverse problems
+with a sparsity constraint. Commun. Pure Appl. Math.,
+57(11):1413–1457, 2004.
+[7] W. Dong, L. Zhang, and G. Shi. Centralized sparse representation for image restoration. Proc. ICCV, 2011.
+[8] W. Dong, L. Zhang, G. Shi, and X. Wu. Image deblurring
+and super-resolution by adaptive sparse domain selection and
+adaptive regularization. IEEE T-IP, 20(7):1838–1857, 2011.
+[9] M. Elad and M. Aharon. Image denoising via sparse and
+redundant representations over learned dictionaries. IEEE
+T-IP, 15(12):3736–3745, 2006.
+[10] R. Fergus, B. Singh, A. Hertzmann, S. Roweis, and W. T.
+Freeman. Removing camera shake from a single photograph.
+Proc. ACM SIGGRAPH, 2006.
+[11] B. Georgescu, I. Shimshoni, and P. Meer. Mean shift based
+clustering in high dimensions: A texture classiﬁcation example. Proc. ICCV, 2003.
+
+[12] R. C. Gonzalez and R. E. Woods. Digital image processing.
+Beijing: Publishing House of Electronics Industry, 2005.
+[13] E. Hadjidemetriou, M. D. Grossberg, and S. K. Nayar. Multiresolution histograms and their use for recognition. IEEE
+T-PAMI, 26(7):831–847, 2004.
+[14] J. Jancsary, S. Nowozin, and C. Rother. Loss-speciﬁc training of non-parametric image restoration models: a new state
+of the art. Proc. ECCV, 2012.
+[15] N. Joshi, C. L. Zitnick, R. Szeliski, and D. Kriegman. Image
+deblurring and denoising using color priors. Proc. CVPR,
+2009.
+[16] V. Katkovnik, A. Foi, K. Egiazarian, and J. Astola. From
+local kernel to nonlocal multiple-model image denoising.
+IJCV, 86(1):1–32, 2010.
+[17] D. Krishnan and R. Fergus. Fast image deconvolution using
+hyper-laplacian priors. Proc. NIPS, 2009.
+[18] A. Levin, R. Fergus, F. Durand, and W. T. Freeman. Image
+and depth from a conventional camera with a coded aperture.
+Proc. ACM SIGGRAPH, 2007.
+[19] A. Levin, Y. Weiss, F. Durand, and W. T. Freeman. Eﬃcient marginal likelihood optimization in blind deconvolution. Proc. CVPR, 2011.
+[20] J. Mairal, F. Bach, and J. Ponce. Task-driven dictionary
+learning. IEEE T-PAMI, 32(4):791–804, 2012.
+[21] J. Mairal, F. Bach, J. Ponce, G. Sapiro, and A. Zisserman.
+Non-local sparse models for image restoration. Proc. ICCV,
+2009.
+[22] J. K. Patel and C. B. Read. Handbook of the normal distribution. New York: Marcel Dekker, 1982.
+[23] J. Portilla, V. Strela, M. J. Wainwright, and E. P. Simoncelli.
+Image denoising using a scale mixture of gaussians in the
+wavelet domain. IEEE T-IP, 12(11):1338–1351, 2003.
+[24] S. Roth and M. J. Black. Fields of experts: a framework for
+learning image priors. Proc. CVPR, 2005.
+[25] L. Rudin, S. Osher, and E. Fatemi. Nonlinear total variation
+based noise removal algorithms. Physica D, 60(1-4):259–
+268, 1992.
+[26] K. Suzuki, I. Horiba, and N. Sugie. Eﬃcient approximation
+of neural ﬁlters for removing quantum noise from images.
+IEEE T-SP, 50(7):1787–1799, 2002.
+[27] M. Varma and A. Zisserman. Classifying images of materials: achieving viewpoint and illumination independence.
+Proc. ECCV, 2002.
+[28] M. Varma and A. Zisserman. A statistical approach to texture classiﬁcation from single images. IJCV, 62(1-2):61–81,
+2005.
+[29] M. Wainwright and S. Simoncelli. Scale mixtures of gaussians and the statistics of natural images. Proc. NIPS, 1999.
+[30] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli.
+Image quality assessment: from error visibility to structural
+similarity. IEEE T-IP, 13(4):600–612, 2004.
+[31] M. Welling, G. Hinton, and S. Osindero. Learning sparse
+topographic representations with products of student-t distributions. Proc. NIPS, 2002.
+[32] D. Zoran and Y. Weiss. From learning models of natural
+image patches to whole image restoration. Proc. ICCV, 2011.
+
+1209
+1207
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+(e)
+
+(f)
+
+Figure 4. Methods comparison. (a) Noisy image with AWGN of standard deviation 30; (b) SAPCA-BM3D [16] restoration result; (c)
+LSSC [21] restoration result; (d) CSR [7] restoration result; (e) GHP restoration result; (f) ground truth.
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+(e)
+
+Figure 5. Results comparison with and without segmentation. (a) Top: noisy image with AWGN of standard deviation 30; bottom: a
+two-region segmentation of it; (b) SAPCA-BM3D [16] restoration results; (c) GHP restoration results without segmentation; (d) GHP
+restoration results with segmentation; (e) ground truth.
+
+1210
+1208
+
+
