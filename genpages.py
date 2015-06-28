@@ -23,7 +23,7 @@ lda = gensim.models.ldamodel.LdaModel.load(fname+'_%d.model'%topic_num)
 pdata=pyLDAvis.gensim.prepare(lda, corpus, dictionary)
 p=pyLDAvis.prepared_data_to_html(pdata)
 
-with open(fname+".html","w") as fp:
+with open(fname+"_%d.html"%(topic_num),"w") as fp:
     print >>fp,"<h1> CVPR %d</h1>"%year
     print >>fp,"topic num=%d"%topic_num
     print >>fp,p
